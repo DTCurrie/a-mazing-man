@@ -1,12 +1,20 @@
-import { Coordinates } from '../lib/coordinates'
-import { randomEntry, randomRange } from '../lib/random'
+import { compareCoordinates, Coordinates } from '../lib/coordinates'
+import { randomEntry } from '../lib/random'
 import { Cell, createCell } from './cell'
-import { Direction, DIRECTIONS, opposites } from './direction'
+import { Direction, DIRECTIONS } from '../lib/direction'
+import { aldousBroder } from './mazes/aldous-broder'
+import { depthFirst } from './mazes/depth-first'
+import { growingTree } from './mazes/growing-tree'
+import { huntAndKill } from './mazes/hunt-and-kill'
+
+export interface MazeGenerator {
+  generate: () => Maze
+}
 
 export type Neighbors = Record<Direction, Coordinates>
 export interface Maze {
-  width: number
   height: number
+  width: number
   entrance: Coordinates
   exit: Coordinates
   getCell: (coordinates: Coordinates) => Cell
@@ -18,15 +26,14 @@ export interface Maze {
   getVisitedNeighbors: (coordinates: Coordinates) => Partial<Neighbors>
   getUnvisitedNeighbors: (coordinates: Coordinates) => Partial<Neighbors>
   removeWall: (coordinates: Coordinates, direction: Direction) => void
-  pickOuterCell: (direction: Direction) => Coordinates
   toString: (cursor?: Coordinates) => string
   toJson: () => unknown
 }
 
-export type MazeOptions = Partial<Pick<Maze, 'width' | 'height'>>
+export type MazeOptions = Pick<Maze, 'height' | 'width' | 'entrance' | 'exit'>
 
-export const createMaze = ({ width = 10, height = 10 }: MazeOptions): Maze => {
-  const cells: Cell[][] = []
+export const createMaze = ({ height, width, entrance, exit }: MazeOptions): Maze => {
+  const cells: Cell[][] = Array.from(Array(height), () => Array.from(Array(width), createCell))
 
   const getCell = ([y, x]: Coordinates): Cell => cells[y][x]
   const getWallStatus = ([y, x]: Coordinates, direction: Direction): boolean => getCell([y, x]).getWall(direction)
@@ -132,20 +139,10 @@ export const createMaze = ({ width = 10, height = 10 }: MazeOptions): Maze => {
     }
   }
 
-  const pickOuterCell = (direction: Direction): Coordinates => {
-    switch (direction) {
-      case 'left': return [randomRange(0, height), 0]
-      case 'right': return [randomRange(0, height), width - 1]
-      case 'up': return [0, randomRange(0, width)]
-      case 'down': return [height - 1, randomRange(0, width)]
-    }
-  }
-
   const toString = (cursor?: Coordinates): string => {
     let stringRepresentation = ''
 
     for (let topRow = 0; topRow < width; topRow++) {
-      // Adds a top wall to the top cells
       stringRepresentation += getWallStatus([0, topRow], 'up') ? '_ ' : '  '
     }
 
@@ -155,13 +152,11 @@ export const createMaze = ({ width = 10, height = 10 }: MazeOptions): Maze => {
       let rowString = ''
       for (let x = 0; x < width; x++) {
         if (x === 0 && getWallStatus([y, x], 'left')) {
-          // Adds a wall to the left most cell
           stringRepresentation += '|'
         }
-        rowString += getCell([y, x]).toString(cursor?.[0] === y && cursor[1] === x)
+        rowString += getCell([y, x]).toString(compareCoordinates(cursor ?? [-1, -1], [y, x]))
       }
 
-      // Add a new line if the last cell of the row
       stringRepresentation += y + 1 < height ? rowString + '\n' : rowString
     }
 
@@ -170,8 +165,10 @@ export const createMaze = ({ width = 10, height = 10 }: MazeOptions): Maze => {
 
   const toJson = (): unknown => {
     const json = {
-      width,
       height,
+      width,
+      entrance,
+      exit,
       cells: [] as unknown[]
     }
 
@@ -186,16 +183,9 @@ export const createMaze = ({ width = 10, height = 10 }: MazeOptions): Maze => {
     return json
   }
 
-  const entranceDirection = randomEntry<Direction>([...DIRECTIONS])
-  const entrance = pickOuterCell(entranceDirection)
-  const exit = pickOuterCell(opposites[entranceDirection])
-
-  getCell(entrance).removeWall(entranceDirection)
-  getCell(exit).removeWall(opposites[entranceDirection])
-
   return {
-    width,
     height,
+    width,
     entrance,
     exit,
     getCell,
@@ -207,8 +197,20 @@ export const createMaze = ({ width = 10, height = 10 }: MazeOptions): Maze => {
     getUnvisitedNeighbors,
     removeWall,
     getWallStatus,
-    pickOuterCell,
     toString,
     toJson
   }
 }
+
+export const MAZES = ['aldousBroder', 'depthFirst', 'growingTree', 'huntAndKill'] as const
+type Mazes = typeof MAZES
+
+export type MazeType = Mazes[number]
+export const mazes: Record<MazeType, (...args: any[]) => MazeGenerator> = {
+  aldousBroder,
+  depthFirst,
+  growingTree,
+  huntAndKill
+}
+
+export const randomMaze = (): MazeType => randomEntry<MazeType>([...MAZES])

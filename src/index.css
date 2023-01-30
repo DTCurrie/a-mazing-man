@@ -10,3 +10,19 @@ html, body {
     width: 100%;
     height: 100%;
 }
+
+.maze-aldous-broder {
+    background: linear-gradient(to top, #374151b0, #6b7280b0), url("/ravenna.png") repeat top center;
+}
+
+.maze-depth-first {
+    background: linear-gradient(to top, #1d4ed8b0, #3b82f6b0), url("/ripples.png") repeat top center;
+}
+
+.maze-growing-tree {
+    background: linear-gradient(to top, #15803db0, #22c55eb0), url("/geometric-leaves.png") repeat top center;
+}
+
+.maze-hunt-and-kill {
+    background: linear-gradient(to top, #b45309b0, #f59e0bb0), url("/rockywall.png") repeat top center;
+}

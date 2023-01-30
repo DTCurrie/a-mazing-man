@@ -1,4 +1,4 @@
-import { Direction } from './direction'
+import { Direction } from '../lib/direction'
 
 export type Walls = Record<Direction, boolean>
 export interface Cell {

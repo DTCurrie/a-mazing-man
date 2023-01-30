@@ -1,25 +1,9 @@
-
-import { Board, createBoard } from './game/board'
+import { createApp } from './app'
+import { createStateMachine } from './game/state'
+import { createStartState } from './game/states/start'
 import './index.css'
 
-const app = document.createElement('div')
-app.id = 'app'
-app.innerHTML = 'Loading ...'
-
-const onWin = (): void => {
-  alert('you win')
-  start()
-}
-const start = (): Board => {
-  const board = createBoard({
-    onWin
-  })
-
-  app.innerHTML = ''
-  app.append(board.element)
-  return board
-}
-
-start()
-
+export const app = createApp()
 document.body.prepend(app)
+
+export const stateMachine = createStateMachine(createStartState())

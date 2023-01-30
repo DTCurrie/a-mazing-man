@@ -1,14 +1,14 @@
 import classNames from 'classnames'
-import { compareCoordinates, Coordinates } from './lib/coordinates'
-import { huntAndKill, HuntAndKillType } from './mazes/hunt-and-kill'
+import { compareCoordinates, Coordinates } from '../lib/coordinates'
+import { Maze, MazeType } from '../maze/maze'
+import { Entity } from './entity'
 
 export interface TileOptions {
   coordinates: Coordinates
 }
 
-export interface Tile extends TileOptions {
+export interface Tile extends TileOptions, Entity<HTMLDivElement> {
   content: string
-  element: HTMLDivElement
   x: () => number
   y: () => number
 }
@@ -33,24 +33,21 @@ export const createTile = ({ coordinates }: TileOptions): Tile => {
 }
 
 export interface BoardOptions {
-  onWin: () => void
+  maze: Maze
+  type: MazeType
 }
 
-export interface Board {
-  element: HTMLDivElement
-  tiles: Tile[][]
+export interface Board extends Entity<HTMLDivElement> {
   listTiles: () => Tile[]
   getTile: (coordinates: Coordinates) => Tile
 }
 
-export const createBoard = ({ onWin }: BoardOptions): Board => {
+export const createBoard = ({ maze, type }: BoardOptions): Board => {
   const element = document.createElement('div')
-  const maze = huntAndKill({ type: HuntAndKillType.Serpentine, width: 100, height: 100 }).generate()
+
   const tiles: Tile[][] = Array.from(
-    Array(maze.height),
-    (_, y) => Array.from(
-      Array(maze.width),
-      (_, x) => {
+    Array(maze.height), (_, y) => Array.from(
+      Array(maze.width), (_, x) => {
         const coordinates: Coordinates = [y, x]
         const tile = createTile({ coordinates })
         const cell = maze.getCell(coordinates)
@@ -85,9 +82,15 @@ export const createBoard = ({ onWin }: BoardOptions): Board => {
       }))
 
   const listTiles = (): Tile[] => tiles.flatMap(col => col.flatMap((row) => row))
-  const getTile = ([x, y]: Coordinates): Tile => tiles[x][y]
+  const getTile = ([y, x]: Coordinates): Tile => tiles[y][x]
+  // background: linear-gradient(to top, #3204fdba, #9907facc), url(https://picsum.photos/1280/853/?random=1) no-repeat top center;
 
-  element.className = classNames('grid grid-flow-dense grid-cols-[repeat(auto-fill,_2rem)] gap-0 bg-[#45a23e]')
+  element.className = classNames('grid grid-flow-dense grid-cols-[repeat(auto-fill,_2rem)] gap-0 m-auto transition-opacity duration-250 ease-in-out bg-gradient-to-t', {
+    'maze-aldous-broder': type === 'aldousBroder',
+    'maze-depth-first': type === 'depthFirst',
+    'maze-growing-tree': type === 'growingTree',
+    'maze-hunt-and-kill': type === 'huntAndKill'
+  })
   element.style.width = `${maze.width * 2}rem`
   element.style.height = `${maze.height * 2}rem`
 
@@ -95,74 +98,8 @@ export const createBoard = ({ onWin }: BoardOptions): Board => {
     element.append(tile.element)
   }
 
-  const player = 'O'
-  let playerPosition = maze.entrance
-  getTile(playerPosition).element.textContent = player
-  getTile(playerPosition).element.scrollIntoView({
-    behavior: 'smooth',
-    block: 'center',
-    inline: 'center'
-  })
-
-  window.addEventListener('keydown', (event) => {
-    event.preventDefault()
-    console.log('event', event)
-    const callback = ({
-      ArrowLeft: () => {
-        const next: Coordinates = [playerPosition[0], playerPosition[1] - 1]
-        console.log('ArrowLeft')
-        if (playerPosition[1] - 1 >= 0 && !maze.getWallStatus(playerPosition, 'left')) {
-          getTile(playerPosition).element.textContent = ''
-          playerPosition = next
-          getTile(playerPosition).element.textContent = player
-        }
-      },
-      ArrowRight: () => {
-        const next: Coordinates = [playerPosition[0], playerPosition[1] + 1]
-        console.log('ArrowRight')
-        if (playerPosition[1] + 1 < maze.width && !maze.getWallStatus(playerPosition, 'right')) {
-          getTile(playerPosition).element.textContent = ''
-          playerPosition = next
-          getTile(playerPosition).element.textContent = player
-        }
-      },
-      ArrowUp: () => {
-        const next: Coordinates = [playerPosition[0] - 1, playerPosition[1]]
-        console.log('ArrowUp')
-        if (playerPosition[0] - 1 >= 0 && !maze.getWallStatus(playerPosition, 'up')) {
-          getTile(playerPosition).element.textContent = ''
-          playerPosition = next
-          getTile(playerPosition).element.textContent = player
-        }
-      },
-      ArrowDown: () => {
-        const next: Coordinates = [playerPosition[0] + 1, playerPosition[1]]
-        console.log('ArrowDown')
-        if (playerPosition[0] + 1 < maze.height && !maze.getWallStatus(playerPosition, 'down')) {
-          getTile(playerPosition).element.textContent = ''
-          playerPosition = next
-          getTile(playerPosition).element.textContent = player
-        }
-      }
-    })[event.key]
-    callback?.()
-
-    getTile(playerPosition).element.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-      inline: 'center'
-    })
-
-    setTimeout(() => {
-      if (compareCoordinates(playerPosition, maze.exit)) {
-        onWin()
-      }
-    }, 10)
-  })
-
   return {
     element,
-    tiles,
     listTiles,
     getTile
   }
