@@ -26,6 +26,7 @@ export interface Maze {
   getVisitedNeighbors: (coordinates: Coordinates) => Partial<Neighbors>
   getUnvisitedNeighbors: (coordinates: Coordinates) => Partial<Neighbors>
   removeWall: (coordinates: Coordinates, direction: Direction) => void
+  addWall: (coordinates: Coordinates, direction: Direction) => void
   toString: (cursor?: Coordinates) => string
   toJson: () => unknown
 }
@@ -132,6 +133,33 @@ export const createMaze = ({ height, width, entrance, exit }: MazeOptions): Maze
     }
   }
 
+  const addWall = ([y, x]: Coordinates, direction: Direction): void => {
+    getCell([y, x]).addWall(direction)
+
+    switch (direction) {
+      case 'right':
+        if (x + 1 < width) {
+          cells[y][x + 1].addWall('left')
+        }
+        break
+      case 'left':
+        if (x - 1 >= 0) {
+          cells[y][x - 1].addWall('right')
+        }
+        break
+      case 'up':
+        if ((y - 1) >= 0) {
+          cells[y - 1][x].addWall('down')
+        }
+        break
+      case 'down':
+        if ((y + 1) < height) {
+          cells[y + 1][x].addWall('up')
+        }
+        break
+    }
+  }
+
   for (let y = 0; y < height; y++) {
     cells[y] ??= []
     for (let x = 0; x < width; x++) {
@@ -196,6 +224,7 @@ export const createMaze = ({ height, width, entrance, exit }: MazeOptions): Maze
     getVisitedNeighbors,
     getUnvisitedNeighbors,
     removeWall,
+    addWall,
     getWallStatus,
     toString,
     toJson

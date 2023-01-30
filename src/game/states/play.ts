@@ -85,8 +85,8 @@ export const createPlayState = ({ maze, type }: PlayStateOptions): State => {
 
       if (compareCoordinates(next, maze.exit)) {
         board.element.classList.add('opacity-0')
-        const height = randomRange(settings.board.min.height, settings.board.max.height)
-        const width = randomRange(settings.board.min.width, settings.board.max.width)
+        const height = randomRange(settings.board.size.min, settings.board.size.max)
+        const width = randomRange(settings.board.size.min, settings.board.size.max)
         const directions: Direction[] = [...DIRECTIONS]
 
         const entranceIndex = randomIndex(directions)

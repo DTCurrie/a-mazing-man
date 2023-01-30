@@ -5,6 +5,7 @@ export interface Cell {
   visited: () => boolean
   setVisited: (value: boolean) => void
   removeWall: (direction: Direction) => void
+  addWall: (direction: Direction) => void
   listWalls: () => Direction[]
   getWall: (direction: Direction) => boolean
   toString: (cursor?: boolean) => string
@@ -30,6 +31,15 @@ export const createCell = (): Cell => {
       case 'right': walls.right = false; break
       case 'up': walls.up = false; break
       case 'down': walls.down = false; break
+    }
+  }
+
+  const addWall = (direction: Direction): void => {
+    switch (direction) {
+      case 'left': walls.left = true; break
+      case 'right': walls.right = true; break
+      case 'up': walls.up = true; break
+      case 'down': walls.down = true; break
     }
   }
 
@@ -67,6 +77,7 @@ export const createCell = (): Cell => {
     visited,
     setVisited,
     removeWall,
+    addWall,
     listWalls,
     getWall,
     toString,
