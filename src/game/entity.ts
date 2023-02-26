@@ -1,3 +1,5 @@
-export interface Entity<Element = HTMLElement> {
-  element: Element
+import { Mesh } from 'three'
+
+export interface Entity {
+  mesh: () => Mesh
 }

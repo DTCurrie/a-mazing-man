@@ -1,4 +1,4 @@
-import { Coordinates } from '../../lib/coordinates'
+import { Vector2 } from 'three'
 import { randomEntry } from '../../lib/random'
 import { createMaze, Maze, MazeGenerator, MazeOptions } from '../../maze/maze'
 import { getValidDirections } from '../../lib/direction'
@@ -10,7 +10,7 @@ export const aldousBroder = ({ height, width, entrance, exit }: AldousBroderOpti
   const generate = (): Maze => {
     const maze = createMaze({ height, width, entrance, exit })
 
-    let current: Coordinates = randomEntry(maze.getUnvisitedCells())
+    let current: Vector2 = randomEntry(maze.getUnvisitedCells())
 
     for (let i = 1; i < height * width;) {
       maze.visitCell(current)
@@ -20,13 +20,13 @@ export const aldousBroder = ({ height, width, entrance, exit }: AldousBroderOpti
 
       if (directions.length === 0) {
         const visited = maze.getVisitedNeighbors(current)
-        const next = visited[randomEntry(getValidDirections(visited))] as Coordinates
+        const next = visited[randomEntry(getValidDirections(visited))] as Vector2
         current = next
         continue
       }
 
       const direction = randomEntry(directions)
-      const next = unvisited[direction] as Coordinates
+      const next = unvisited[direction] as Vector2
 
       maze.removeWall(current, direction)
       maze.visitCell(next)

@@ -1,7 +1,7 @@
 import { Direction, directionOpposites, DIRECTIONS } from '../../lib/direction'
 import { randomIndex, randomOuterBound, randomRange } from '../../lib/random'
-import { app, stateMachine } from '../../main'
-import { randomMaze } from '../../maze/maze'
+import { stateMachine } from '../../main'
+import { MAZES } from '../../maze/maze'
 import { settings } from '../../settings'
 import { State } from '../state'
 import { createButton } from '../ui/button'
@@ -10,10 +10,9 @@ import { createScreenContainer } from '../ui/screen-container'
 import { createPickGeneratorState } from './pick-generator'
 
 export const createStartState = (): State => {
-  const onEnter = (): void => {
-    app.innerHTML = ''
+  const screen = createScreenContainer()
 
-    const screen = createScreenContainer()
+  const onEnter = (): void => {
     screen.element.append(createHeading({ level: '1', content: 'A-Mazing, Man!' }).element)
     screen.element.append(createButton({
       label: 'START!',
@@ -29,16 +28,22 @@ export const createStartState = (): State => {
         const exit = randomOuterBound(height, width, directionOpposites[entranceDirection])
 
         stateMachine.transition(createPickGeneratorState({
-          type: randomMaze(),
+          type: MAZES[0],
+          // type: randomMaze(),
           options: { height, width, entrance, exit }
         }))
       }
     }).element)
 
-    app.append(screen.element)
+    document.body.append(screen.element)
+  }
+
+  const onExit = (): void => {
+    screen.element.remove()
   }
 
   return {
-    onEnter
+    onEnter,
+    onExit
   }
 }

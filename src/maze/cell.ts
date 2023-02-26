@@ -70,7 +70,7 @@ export const createCell = (): Cell => {
     right: walls.right,
     up: walls.up,
     down: walls.down,
-    visited
+    visited: visited()
   })
 
   return {

@@ -18,13 +18,12 @@ export const createPickGeneratorState = ({ type, options }: PickGeneratorStateOp
       case 'aldousBroder': return aldousBroder(options).generate()
       case 'depthFirst': return depthFirst(options).generate()
       case 'growingTree': return growingTree({ ...options, backtrackChance: Math.random() }).generate()
-      case 'huntAndKill': return huntAndKill({ ...options }).generate()
+      case 'huntAndKill': return huntAndKill(options).generate()
     }
   }
 
   const onEnter = (): void => {
     const maze = generateMaze()
-    console.log('maze', type, maze.toJson())
     stateMachine.transition(createPlayState({ maze, type }))
   }
 

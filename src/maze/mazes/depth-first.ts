@@ -1,4 +1,4 @@
-import { Coordinates } from '../../lib/coordinates'
+import { Vector2 } from 'three'
 import { randomRange } from '../../lib/random'
 import { createMaze, Maze, MazeGenerator, MazeOptions } from '../../maze/maze'
 import { getValidDirections } from '../../lib/direction'
@@ -10,8 +10,8 @@ export const depthFirst = ({ height, width, entrance, exit }: DepthFirstOptions)
   const generate = (): Maze => {
     const maze = createMaze({ height, width, entrance, exit })
 
-    let current: Coordinates = [randomRange(0, height), randomRange(0, width)]
-    const stack: Coordinates[] = [current]
+    let current = new Vector2(randomRange(0, width), randomRange(0, height))
+    const stack: Vector2[] = [current]
 
     for (let i = 0; i < stack.length;) {
       maze.visitCell(current)
@@ -21,7 +21,7 @@ export const depthFirst = ({ height, width, entrance, exit }: DepthFirstOptions)
 
       if (directions.length > 0) {
         const direction = directions[randomRange(0, directions.length)]
-        const next = unvisited[direction] as Coordinates
+        const next = unvisited[direction] as Vector2
 
         stack.push(current)
         maze.removeWall(current, direction)

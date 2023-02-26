@@ -2,15 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-    min-height: 100%;
-}
-
-html, body {
-    width: 100%;
-    height: 100%;
-}
-
 .maze-aldous-broder {
     background: linear-gradient(to top, #374151b0, #6b7280b0), url("/ravenna.png") repeat top center;
 }

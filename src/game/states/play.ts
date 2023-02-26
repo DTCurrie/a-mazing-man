@@ -1,7 +1,7 @@
-import { Coordinates, compareCoordinates } from '../../lib/coordinates'
+import { Vector2, Vector3 } from 'three'
 import { Direction, directionOpposites, DIRECTIONS } from '../../lib/direction'
 import { randomIndex, randomOuterBound, randomRange } from '../../lib/random'
-import { app, stateMachine } from '../../main'
+import { camera, light, scene, stateMachine } from '../../main'
 import { Maze, MazeType, randomMaze } from '../../maze/maze'
 import { settings } from '../../settings'
 import { createBoard } from '../board'
@@ -15,31 +15,34 @@ export interface PlayStateOptions {
 }
 
 export const createPlayState = ({ maze, type }: PlayStateOptions): State => {
-  const player = createPlayer({ sprite: '0', initialPosition: maze.entrance })
+  console.log('maze entrance', maze.entrance())
+  const player = createPlayer({ initialPosition: maze.entrance() })
+  console.log('player pos', player.position())
   const board = createBoard({ maze, type })
+  const cameraOffset = new Vector3(0, 0, 5)
+  let frame: number
 
-  const movePlayer = (direction: Direction): Coordinates => {
-    let next: Coordinates = [...player.getPosition()]
+  const movePlayer = (direction: Direction): Vector2 => {
+    const next: Vector2 = player.position()
     switch (direction) {
       case 'left':
-        if (next[1] - 1 >= 0 && !maze.getWallStatus(next, 'left')) {
-          next = [next[0], next[1] - 1]
+        if (next.x - 1 >= 0 && !maze.getWallStatus(next, 'left')) {
+          next.add(new Vector2(-1, 0))
         }
         break
       case 'right':
-        if (next[1] + 1 < maze.width && !maze.getWallStatus(next, 'right')) {
-          next = [next[0], next[1] + 1]
+        if (next.x + 1 < maze.width() && !maze.getWallStatus(next, 'right')) {
+          next.add(new Vector2(1, 0))
         }
         break
       case 'up':
-        if (next[0] - 1 >= 0 && !maze.getWallStatus(next, 'up')) {
-          next = [next[0] - 1, next[1]]
+        if (next.y + 1 < maze.height() && !maze.getWallStatus(next, 'up')) {
+          next.add(new Vector2(0, 1))
         }
         break
       case 'down':
-
-        if (next[0] + 1 < maze.height && !maze.getWallStatus(next, 'down')) {
-          next = [next[0] + 1, next[1]]
+        if (next.y - 1 >= 0 && !maze.getWallStatus(next, 'down')) {
+          next.add(new Vector2(0, -1))
         }
         break
     }
@@ -47,14 +50,14 @@ export const createPlayState = ({ maze, type }: PlayStateOptions): State => {
     return next
   }
 
-  const moveCallbacks: Record<string, () => Coordinates> = {
+  const moveCallbacks: Record<string, () => Vector2> = {
     ArrowLeft: () => movePlayer('left'),
     ArrowRight: () => movePlayer('right'),
     ArrowUp: () => movePlayer('up'),
     ArrowDown: () => movePlayer('down')
   }
 
-  const eventCallback = (event: KeyboardEvent): () => Coordinates => {
+  const eventCallback = (event: KeyboardEvent): () => Vector2 => {
     const callback = moveCallbacks[event.key]
     if (callback !== undefined) {
       event.preventDefault()
@@ -65,70 +68,63 @@ export const createPlayState = ({ maze, type }: PlayStateOptions): State => {
 
   const eventHandler = (event: KeyboardEvent): void => {
     const next = eventCallback(event)?.()
-
     if (next === undefined) {
       return
     }
 
-    if (!compareCoordinates(player.getPosition(), next)) {
-      board.getTile(player.getPosition()).element.textContent = ''
-      player.setPosition(next)
-      board.getTile(next).element.textContent = player.getSprite()
+    player.move(next)
+
+    camera.position.copy(player.mesh().position).add(cameraOffset)
+    camera.lookAt(player.mesh().position)
+
+    if (next.equals(maze.exit())) {
+      const height = randomRange(settings.board.size.min, settings.board.size.max)
+      const width = randomRange(settings.board.size.min, settings.board.size.max)
+      const directions: Direction[] = [...DIRECTIONS]
+
+      const entranceIndex = randomIndex(directions)
+      const entranceDirection = directions[entranceIndex]
+      const entrance = randomOuterBound(height, width, entranceDirection)
+      directions.splice(entranceIndex, 1)
+
+      const exit = randomOuterBound(height, width, directionOpposites[entranceDirection])
+
+      stateMachine.transition(createPickGeneratorState({
+        type: randomMaze(),
+        options: {
+          height,
+          width,
+          entrance,
+          exit
+        }
+      }))
     }
+  }
 
-    requestAnimationFrame(() => {
-      board.getTile(next).element.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center'
-      })
-
-      if (compareCoordinates(next, maze.exit)) {
-        board.element.classList.add('opacity-0')
-        const height = randomRange(settings.board.size.min, settings.board.size.max)
-        const width = randomRange(settings.board.size.min, settings.board.size.max)
-        const directions: Direction[] = [...DIRECTIONS]
-
-        const entranceIndex = randomIndex(directions)
-        const entranceDirection = directions[entranceIndex]
-        const entrance = randomOuterBound(height, width, entranceDirection)
-        directions.splice(entranceIndex, 1)
-
-        const exit = randomOuterBound(height, width, directionOpposites[entranceDirection])
-
-        setTimeout(() => {
-          stateMachine.transition(createPickGeneratorState({
-            type: randomMaze(),
-            options: {
-              height,
-              width,
-              entrance,
-              exit
-            }
-          }))
-        }, 250)
-      }
-    })
+  const cameraFollow = (): void => {
+    frame = requestAnimationFrame(cameraFollow)
+    camera.position.lerp(new Vector3(player.position().x, player.position().y, cameraOffset.z), 0.1)
+    camera.lookAt(player.mesh().position)
+    light.lookAt(player.mesh().position)
   }
 
   const onEnter = (): void => {
-    board.getTile(player.getPosition()).element.textContent = player.getSprite()
+    scene.add(player.mesh())
+    scene.add(board.tiles())
 
-    app.innerHTML = ''
-    app.append(board.element)
+    light.position.set(maze.width() / 2, maze.height() / 2, 7.5)
+
+    cameraFollow()
 
     window.addEventListener('keydown', eventHandler)
-
-    requestAnimationFrame(() => {
-      board.getTile(player.getPosition()).element.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center'
-      })
-    })
   }
 
   const onExit = (): void => {
+    scene.remove(player.mesh())
+    scene.remove(board.tiles())
+
+    cancelAnimationFrame(frame)
+
     window.removeEventListener('keydown', eventHandler)
   }
 

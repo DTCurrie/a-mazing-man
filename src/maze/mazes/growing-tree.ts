@@ -1,4 +1,4 @@
-import { Coordinates } from '../../lib/coordinates'
+import { Vector2 } from 'three'
 import { randomEntry } from '../../lib/random'
 import { createMaze, Maze, MazeGenerator, MazeOptions } from '../maze'
 import { getValidDirections } from '../../lib/direction'
@@ -13,8 +13,8 @@ export const growingTree = ({ height, width, backtrackChance = 0.5, entrance, ex
   const generate = (): Maze => {
     const maze = createMaze({ height, width, entrance, exit })
 
-    let current: Coordinates = randomEntry(maze.getUnvisitedCells())
-    const active: Coordinates[] = [current]
+    let current: Vector2 = randomEntry(maze.getUnvisitedCells())
+    const active: Vector2[] = [current]
 
     for (let i = 0; i < active.length;) {
       if (Math.random() < backtrackChance) {
@@ -33,7 +33,7 @@ export const growingTree = ({ height, width, backtrackChance = 0.5, entrance, ex
       }
 
       const direction = randomEntry(directions)
-      const next = visited[direction] as Coordinates
+      const next = visited[direction] as Vector2
 
       active.push(next)
       maze.removeWall(current, direction)

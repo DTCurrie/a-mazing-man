@@ -1,4 +1,4 @@
-import { Coordinates } from '../../lib/coordinates'
+import { Vector2 } from 'three'
 import { randomEntry, randomRange, shuffleArray } from '../../lib/random'
 import { Maze, MazeOptions, createMaze, Neighbors, MazeGenerator } from '../../maze/maze'
 import { Direction, getValidDirections } from '../../lib/direction'
@@ -7,9 +7,9 @@ export type HuntAndKillOptions = MazeOptions
 export type HuntAndKill = MazeGenerator
 
 export const huntAndKill = ({ height, width, entrance, exit }: HuntAndKillOptions): HuntAndKill => {
-  const walk = (start: Coordinates, maze: Maze): Maze => {
+  const walk = (start: Vector2, maze: Maze): Maze => {
     const modifiedMaze = { ...maze }
-    let current: Coordinates = [...start]
+    let current = new Vector2().copy(start)
     let unvisited = modifiedMaze.getUnvisitedNeighbors(current)
     let directions = shuffleArray(getValidDirections(unvisited))
 
@@ -17,7 +17,7 @@ export const huntAndKill = ({ height, width, entrance, exit }: HuntAndKillOption
       const direction = randomEntry(directions)
       modifiedMaze.removeWall(current, direction)
 
-      const next = unvisited[direction] as Coordinates
+      const next = unvisited[direction] as Vector2
       current = next
 
       modifiedMaze.visitCell(current)
@@ -29,7 +29,7 @@ export const huntAndKill = ({ height, width, entrance, exit }: HuntAndKillOption
     return modifiedMaze
   }
 
-  const hunt = (maze: Maze): { coordinates: Coordinates, neighbors: Partial<Neighbors> } | undefined => {
+  const hunt = (maze: Maze): { coordinates: Vector2, neighbors: Partial<Neighbors> } | undefined => {
     const unvisited = shuffleArray(maze.getUnvisitedCells())
 
     for (let i = 0; i < unvisited.length; i++) {
@@ -49,7 +49,7 @@ export const huntAndKill = ({ height, width, entrance, exit }: HuntAndKillOption
 
   const generate = (): Maze => {
     let maze = createMaze({ height, width, entrance, exit })
-    let current: Coordinates = [randomRange(0, height), randomRange(0, width)]
+    let current = new Vector2(randomRange(0, width), randomRange(0, height))
 
     for (let i = maze.getUnvisitedCells().length; i > 0;) {
       maze = walk(current, maze)
